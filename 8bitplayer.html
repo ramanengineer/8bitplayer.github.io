@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional 8-Bit NES Music Player</title>
+    <link href="https://unpkg.com/nes.css@latest/css/nes.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff4757;
+            --secondary-color: #5352ed;
+            --background-dark: #1e272e;
+            --background-light: #2c3a47;
+            --text-color: #f1f2f6;
+            --highlight-color: #ffa502;
+            --border-color: #2ed573;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--background-dark), var(--background-light));
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Press Start 2P', cursive;
+            color: var(--text-color);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .pixel-art-decoration {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+            background-image: 
+                radial-gradient(var(--primary-color) 1px, transparent 1px),
+                radial-gradient(var(--secondary-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0.05) 50%,
+                rgba(0, 0, 0, 0.1) 50%
+            );
+            background-size: 100% 3px;
+            z-index: 1000;
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+            z-index: 999;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { top: -4px; }
+            100% { top: 100%; }
+        }
+
+        .container {
+            max-width: 800px;
+            width: 90%;
+            background: var(--background-light);
+            border: 6px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 
+                0 0 0 4px var(--primary-color),
+                0 0 30px rgba(0, 0, 0, 0.5),
+                inset 0 0 20px rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+            animation: power-on 1s ease-out;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        @keyframes power-on {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.95);
+                box-shadow: 0 0 0 4px var(--primary-color), 0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.3);
+            }
+            20% { 
+                opacity: 0.5; 
+                box-shadow: 0 0 0 4px var(--primary-color), 0 0 30px var(--primary-color), inset 0 0 20px rgba(0, 0, 0, 0.3);
+            }
+            60% { 
+                opacity: 0.8; 
+                transform: scale(1.02);
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1);
+                box-shadow: 0 0 0 4px var(--primary-color), 0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        .inner-container {
+            background: var(--background-dark);
+            border: 4px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .inner-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 70% 20%, rgba(255,255,255,0.1) 0%, transparent 25%),
+                radial-gradient(circle at 30% 80%, rgba(255,255,255,0.08) 0%, transparent 20%);
+            pointer-events: none;
+        }
+
+        .title-section {
+            position: relative;
+            text-align: center;
+            margin-bottom: 30px;
+            transform-style: preserve-3d;
+        }
+
+        .logo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary-color);
+            clip-path: polygon(
+                0% 50%, 15% 0%, 85% 0%, 100% 50%, 85% 100%, 15% 100%
+            );
+            margin-right: 15px;
+            position: relative;
+            animation: rotate3d 10s infinite linear;
+            transform-style: preserve-3d;
+            display: inline-block;
+        }
+
+        @keyframes rotate3d {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+
+        .logo-icon::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background-color: var(--background-dark);
+            clip-path: polygon(
+                0% 50%, 15% 0%, 85% 0%, 100% 50%, 85% 100%, 15% 100%
+            );
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            background-color: var(--secondary-color);
+            border-radius: 50%;
+        }
+
+        .title {
+            color: var(--primary-color);
+            text-shadow: 
+                2px 2px 0 #000,
+                -2px 2px 0 #000,
+                2px -2px 0 #000,
+                -2px -2px 0 #000,
+                0 0 10px var(--primary-color);
+            font-size: 28px;
+            letter-spacing: 1px;
+            transform: translateZ(20px);
+            position: relative;
+        }
+
+        .subtitle {
+            color: var(--secondary-color);
+            font-size: 12px;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+
+        .file-section {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .select-btn {
+            background: var(--secondary-color);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 3px solid #333;
+            border-radius: 4px;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .select-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
+            background: var(--highlight-color);
+        }
+
+        .select-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .track-count {
+            background: var(--background-dark);
+            padding: 10px 15px;
+            border: 3px solid #333;
+            border-radius: 4px;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .track-count-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background-color: var(--highlight-color);
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .track-list {
+            max-height: 250px;
+            overflow-y: auto;
+            background: var(--background-dark);
+            border: 4px solid #333;
+            border-radius: 8px;
+            margin: 20px 0;
+            padding: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--background-dark);
+        }
+
+        .track-list::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        .track-list::-webkit-scrollbar-track {
+            background: var(--background-dark);
+            border-radius: 8px;
+        }
+
+        .track-list::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 8px;
+            border: 3px solid var(--background-dark);
+        }
+
+        .track-item {
+            cursor: pointer;
+            padding: 12px;
+            margin: 8px 0;
+            background: var(--background-light);
+            color: var(--text-color);
+            border: 3px solid #333;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-size: 12px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .track-item::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background-color: var(--text-color);
+            border-radius: 50%;
+        }
+
+        .track-item:hover {
+            background: var(--highlight-color);
+            color: #333;
+            transform: translateX(5px);
+            box-shadow: -3px 3px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .track-item.active {
+            background: var(--primary-color);
+            color: #fff;
+            border-color: #fff;
+            box-shadow: 0 0 8px var(--primary-color);
+            transform: translateX(10px);
+        }
+
+        .track-item.active::before {
+            background-color: #fff;
+            box-shadow: 0 0 5px #fff;
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.5); }
+            100% { transform: translateY(-50%) scale(1); }
+        }
+
+        .controls-section {
+            background: var(--background-dark);
+            border: 3px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .ctrl-btn {
+            background: var(--secondary-color);
+            color: #fff;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 22px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 3px solid #333;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .ctrl-btn:hover {
+            background: var(--highlight-color);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .ctrl-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        #playPauseBtn {
+            background: var(--primary-color);
+            width: 70px;
+            height: 70px;
+            font-size: 26px;
+        }
+
+        .progress-container {
+            position: relative;
+            height: 30px;
+            background: #333;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 3px solid #222;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+            position: relative;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.2) 0%,
+                rgba(255, 255, 255, 0) 50%,
+                rgba(0, 0, 0, 0.1) 100%
+            );
+        }
+
+        .progress-time {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            z-index: 1;
+            width: 100%;
+            text-align: center;
+        }
+
+        .info-display {
+            background: #000;
+            border: 4px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.05) 0%,
+                rgba(255, 255, 255, 0) 20%
+            );
+            pointer-events: none;
+        }
+
+        .current-track {
+            color: var(--secondary-color);
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px var(--secondary-color);
+            animation: text-glow 2s infinite alternate;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        @keyframes text-glow {
+            0% { text-shadow: 0 0 5px var(--secondary-color); }
+            100% { text-shadow: 0 0 10px var(--secondary-color), 0 0 15px var(--secondary-color); }
+        }
+
+        .long-text {
+            animation: scroll-text 10s linear infinite;
+            display: inline-block;
+            padding-left: 100%;
+            white-space: nowrap;
+        }
+
+        @keyframes scroll-text {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-200%); }
+        }
+
+        .equalizer {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 40px;
+            gap: 4px;
+        }
+
+        .eq-bar {
+            width: 6px;
+            background: var(--primary-color);
+            border-radius: 2px 2px 0 0;
+            opacity: 0.2;
+        }
+
+        .playing .eq-bar {
+            opacity: 1;
+            animation: eq-animation 0.5s infinite;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 8px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .footer span {
+            color: var(--primary-color);
+        }
+
+        .pixel-btn {
+            display: inline-block;
+            color: var(--text-color);
+            text-decoration: none;
+            margin: 0 5px;
+            padding: 2px 5px;
+            background: var(--background-dark);
+            border: 1px solid var(--primary-color);
+            border-radius: 3px;
+        }
+
+        audio {
+            display: none;
+        }
+
+        .visualizer-container {
+            margin-top: 20px;
+            height: 60px;
+            background: #000;
+            border: 3px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+                padding: 15px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+            
+            .subtitle {
+                font-size: 10px;
+            }
+            
+            .select-btn {
+                padding: 10px 15px;
+                font-size: 10px;
+            }
+            
+            .ctrl-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+            }
+            
+            #playPauseBtn {
+                width: 60px;
+                height: 60px;
+                font-size: 22px;
+            }
+            
+            .track-item {
+                font-size: 10px;
+                padding: 10px;
+                padding-left: 20px;
+            }
+            
+            .current-track {
+                font-size: 10px;
+            }
+            
+            .file-section {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .track-count {
+                width: 100%;
+                text-align: center;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pixel-art-decoration"></div>
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
+
+    <div class="container">
+        <div class="inner-container">
+            <div class="title-section">
+                <div class="logo">
+                    <div class="logo-icon"></div>
+                    <h1 class="title">RETRO BEATS</h1>
+                </div>
+                <div class="subtitle">NES 8-BIT MUSIC PLAYER PRO</div>
+            </div>
+
+            <div class="file-section">
+                <button type="button" class="select-btn" onclick="selectFolder()">SELECT MUSIC FOLDER</button>
+                <div class="track-count">
+                    <span class="track-count-icon"></span>
+                    <span id="trackCounter">0 TRACKS</span>
+                </div>
+            </div>
+
+            <div class="track-list" id="trackList"></div>
+
+            <div class="controls-section">
+                <div class="controls">
+                    <button class="ctrl-btn" onclick="previousTrack()">⏮</button>
+                    <button class="ctrl-btn" id="playPauseBtn" onclick="togglePlay()">▶</button>
+                    <button class="ctrl-btn" onclick="nextTrack()">⏭</button>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                    <div class="progress-time" id="progressTime">00:00 / 00:00</div>
+                </div>
+            </div>
+
+            <div class="info-display">
+                <div class="current-track" id="currentTrack">
+                    <span class="long-text">SELECT A TRACK TO BEGIN PLAYING</span>
+                </div>
+                <div class="equalizer" id="equalizer">
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                </div>
+            </div>
+
+            <div class="visualizer-container">
+                <canvas id="visualizer"></canvas>
+            </div>
+
+            <div class="footer">
+                PROFESSIONAL <span>8-BIT</span> MUSIC PLAYER v2.5 | 
+                <a href="#" class="pixel-btn">ABOUT</a> | 
+                <a href="#" class="pixel-btn">HELP</a>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioPlayer" controls>
+        <source src="" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer');
+        const trackList = document.getElementById('trackList');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressTime = document.getElementById('progressTime');
+        const currentTrackDisplay = document.getElementById('currentTrack');
+        const equalizer = document.getElementById('equalizer');
+        const trackCounter = document.getElementById('trackCounter');
+        const visualizer = document.getElementById('visualizer');
+        const visualizerCtx = visualizer.getContext('2d');
+        
+        let tracks = [];
+        let currentTrackIndex = -1;
+        let audioContext = null;
+        let analyser = null;
+        let dataArray = null;
+        let rafId = null;
+        let equalizerInterval = null;
+        let isShuffleMode = false;
+        let isLoopMode = false;
+        let previousVolume = 0.7;
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default volume
+            audioPlayer.volume = 0.7;
+            
+            // Create notification container
+            const notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            notificationContainer.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 1001;
+                text-align: center;
+                opacity: 0;
+                transition: opacity 0.3s;
+                pointer-events: none;
+                font-family: 'Press Start 2P', cursive;
+                color: #fff;
+                background: rgba(0, 0, 0, 0.8);
+                border: 3px solid var(--primary-color);
+                padding: 15px 20px;
+                border-radius: 8px;
+                text-shadow: 2px 2px 0 #000;
+                box-shadow: 0 0 15px var(--primary-color);
+            `;
+            document.body.appendChild(notificationContainer);
+            
+            // Set canvas size
+            resizeCanvas();
+            
+            // Add keyboard shortcuts
+            window.addEventListener('keydown', handleKeyboardShortcuts);
+        });
+
+        // Set canvas size
+        function resizeCanvas() {
+            visualizer.width = visualizer.clientWidth;
+            visualizer.height = visualizer.clientHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notificationContainer = document.getElementById('notification-container');
+            
+            // Set styles based on notification type
+            let borderColor = 'var(--secondary-color)';
+            let glowColor = 'var(--secondary-color)';
+            
+            switch(type) {
+                case 'success':
+                    borderColor = '#2ed573';
+                    glowColor = '#2ed573';
+                    break;
+                case 'error':
+                    borderColor = '#ff4757';
+                    glowColor = '#ff4757';
+                    break;
+                case 'loading':
+                    borderColor = '#ffa502';
+                    glowColor = '#ffa502';
+                    break;
+            }
+            
+            notificationContainer.style.borderColor = borderColor;
+            notificationContainer.style.boxShadow = `0 0 15px ${glowColor}`;
+            notificationContainer.textContent = message;
+            notificationContainer.style.opacity = '1';
+            
+            // Hide notification after 3 seconds
+            setTimeout(() => {
+                notificationContainer.style.opacity = '0';
+            }, 3000);
+        }
+
+        // Initialize audio context and analyzer
+        function initAudioAnalyser() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaElementSource(audioPlayer);
+                
+                analyser.fftSize = 256;
+                analyser.smoothingTimeConstant = 0.8;
+                
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                drawVisualizer();
+            }
+        }
+
+        // Draw audio visualizer
+        function drawVisualizer() {
+            rafId = requestAnimationFrame(drawVisualizer);
+            
+            if (analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                
+                visualizerCtx.clearRect(0, 0, visualizer.width, visualizer.height);
+                visualizerCtx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                visualizerCtx.fillRect(0, 0, visualizer.width, visualizer.height);
+                
+                const barWidth = (visualizer.width / dataArray.length) * 2.5;
+                const barSpacing = 1;
+                const totalWidth = (barWidth + barSpacing) * dataArray.length;
+                const startX = (visualizer.width - totalWidth) / 2;
+                let x = startX;
+                
+                for (let i = 0; i < dataArray.length; i++) {
+                    const barHeight = (dataArray[i] / 255) * visualizer.height;
+                    
+                    // Create gradient
+                    const gradient = visualizerCtx.createLinearGradient(0, visualizer.height, 0, visualizer.height - barHeight);
+                    gradient.addColorStop(0, '#ff4757');
+                    gradient.addColorStop(0.5, '#ffa502');
+                    gradient.addColorStop(1, '#5352ed');
+                    
+                    visualizerCtx.fillStyle = gradient;
+                    visualizerCtx.fillRect(x, visualizer.height - barHeight, barWidth, barHeight);
+                    
+                    // Add glow effect
+                    visualizerCtx.shadowBlur = 10;
+                    visualizerCtx.shadowColor = '#ff4757';
+                    
+                    x += barWidth + barSpacing;
+                }
+                
+                // Reset shadow
+                visualizerCtx.shadowBlur = 0;
+                
+                // Add scan line effect
+                visualizerCtx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                const scanLineY = (Date.now() % 2000) / 2000 * visualizer.height;
+                visualizerCtx.fillRect(0, scanLineY, visualizer.width, 2);
+            }
+        }
+
+        // Animate equalizer bars
+        function animateEqualizer() {
+            if (!audioPlayer.paused) {
+                equalizer.classList.add('playing');
+                const eqBars = document.querySelectorAll('.eq-bar');
+                
+                eqBars.forEach((bar, index) => {
+                    const height = Math.floor(Math.random() * 40) + 5;
+                    bar.style.height = `${height}px`;
+                    bar.style.animationDuration = `${Math.random() * 0.5 + 0.2}s`;
+                    bar.style.animationDelay = `${index * 0.05}s`;
+                });
+            } else {
+                equalizer.classList.remove('playing');
+                document.querySelectorAll('.eq-bar').forEach(bar => {
+                    bar.style.height = '5px';
+                });
+            }
+        }
+        
+        // Start equalizer animation
+        function startEqualizerAnimation() {
+            if (equalizerInterval) clearInterval(equalizerInterval);
+            equalizerInterval = setInterval(animateEqualizer, 150);
+            animateEqualizer();
+        }
+
+        // Format time (seconds to MM:SS)
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "00:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Handle keyboard shortcuts
+        function handleKeyboardShortcuts(e) {
+            switch(e.key) {
+                case ' ': // Space - Play/Pause
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowRight': // Right arrow - Next track
+                    e.preventDefault();
+                    nextTrack();
+                    break;
+                case 'ArrowLeft': // Left arrow - Previous track
+                    e.preventDefault();
+                    previousTrack();
+                    break;
+                case 'm': // M - Mute/Unmute
+                case 'M':
+                    e.preventDefault();
+                    toggleMute();
+                    break;
+                case 's': // S - Shuffle
+                case 'S':
+                    e.preventDefault();
+                    toggleShuffle();
+                    break;
+                case 'l': // L - Loop
+                case 'L':
+                    e.preventDefault();
+                    toggleLoop();
+                    break;
+            }
+        }
+        
+        // Toggle mute
+        function toggleMute() {
+            if (audioPlayer.volume > 0) {
+                previousVolume = audioPlayer.volume;
+                audioPlayer.volume = 0;
+                showNotification("MUTED");
+            } else {
+                audioPlayer.volume = previousVolume;
+                showNotification("UNMUTED");
+            }
+        }
+        
+        // Toggle shuffle mode
+        function toggleShuffle() {
+            isShuffleMode = !isShuffleMode;
+            showNotification(isShuffleMode ? "SHUFFLE: ON" : "SHUFFLE: OFF");
+        }
+        
+        // Toggle loop mode
+        function toggleLoop() {
+            isLoopMode = !isLoopMode;
+            audioPlayer.loop = isLoopMode;
+            showNotification(isLoopMode ? "LOOP: ON" : "LOOP: OFF");
+        }
+
+        // Play selected track
+        function playTrack(index) {
+            if (index < 0 || index >= tracks.length) return;
+            
+            // Clean up previous track
+            if (currentTrackIndex !== -1) {
+                const previousTrackItem = document.querySelector(`.track-item[data-index="${currentTrackIndex}"]`);
+                if (previousTrackItem) previousTrackItem.classList.remove('active');
+            }
+            
+            currentTrackIndex = index;
+            const track = tracks[index];
+            const url = URL.createObjectURL(track.file);
+            
+            // Update UI
+            audioPlayer.src = url;
+            playPauseBtn.textContent = '⏸';
+            const displayName = track.name.length > 30 ? 
+                `<span class="long-text">${track.name}</span>` : 
+                track.name;
+            currentTrackDisplay.innerHTML = displayName;
+            
+            // Highlight current track
+            const trackItem = document.querySelector(`.track-item[data-index="${index}"]`);
+            if (trackItem) {
+                trackItem.classList.add('active');
+                trackItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            
+            // Start playing
+            audioPlayer.play()
+                .then(() => {
+                    // Initialize audio analyzer on first play
+                    if (!audioContext) initAudioAnalyser();
+                    startEqualizerAnimation();
+                })
+                .catch(err => {
+                    console.error('Error playing track:', err);
+                    showNotification("ERROR PLAYING TRACK", "error");
+                });
+        }
+        
+        // Toggle play/pause
+        function togglePlay() {
+            if (tracks.length === 0) {
+                showNotification("NO TRACKS AVAILABLE", "error");
+                return;
+            }
+            
+            if (currentTrackIndex === -1) {
+                playTrack(0);
+                return;
+            }
+            
+            if (audioPlayer.paused) {
+                audioPlayer.play()
+                    .then(() => {
+                        playPauseBtn.textContent = '⏸';
+                        startEqualizerAnimation();
+                    })
+                    .catch(err => {
+                        console.error('Error playing track:', err);
+                        showNotification("ERROR PLAYING TRACK", "error");
+                    });
+            } else {
+                audioPlayer.pause();
+                playPauseBtn.textContent = '▶';
+                equalizer.classList.remove('playing');
+            }
+        }
+        
+        // Play next track
+        function nextTrack() {
+            if (tracks.length === 0) return;
+            
+            let nextIndex;
+            
+            if (isShuffleMode) {
+                // Play random track in shuffle mode
+                do {
+                    nextIndex = Math.floor(Math.random() * tracks.length);
+                } while (nextIndex === currentTrackIndex && tracks.length > 1);
+            } else {
+                // Play next track in sequence
+                nextIndex = currentTrackIndex < tracks.length - 1 ? currentTrackIndex + 1 : 0;
+            }
+            
+            playTrack(nextIndex);
+            showNotification(`PLAYING: ${tracks[nextIndex].name.slice(0, 20)}${tracks[nextIndex].name.length > 20 ? '...' : ''}`);
+        }
+        
+        // Play previous track
+        function previousTrack() {
+            if (tracks.length === 0) return;
+            
+            // If current time is more than 3 seconds, restart the track
+            if (audioPlayer.currentTime > 3) {
+                audioPlayer.currentTime = 0;
+                return;
+            }
+            
+            let prevIndex;
+            
+            if (isShuffleMode) {
+                // Play random track in shuffle mode
+                do {
+                    prevIndex = Math.floor(Math.random() * tracks.length);
+                } while (prevIndex === currentTrackIndex && tracks.length > 1);
+            } else {
+                // Play previous track in sequence
+                prevIndex = currentTrackIndex > 0 ? currentTrackIndex - 1 : tracks.length - 1;
+            }
+            
+            playTrack(prevIndex);
+            showNotification(`PLAYING: ${tracks[prevIndex].name.slice(0, 20)}${tracks[prevIndex].name.length > 20 ? '...' : ''}`);
+        }
+        
+        // Select folder and load music files
+        async function selectFolder() {
+            try {
+                // Show loading animation
+                showNotification("SCANNING FILES...", "loading");
+                
+                const dirHandle = await window.showDirectoryPicker();
+                tracks = [];
+                trackList.innerHTML = '';
+                
+                let fileCount = 0;
+                
+                for await (const entry of dirHandle.values()) {
+                    if (entry.kind === 'file' && entry.name.match(/\.(mp3|wav|ogg)$/i)) {
+                        const file = await entry.getFile();
+                        tracks.push({ 
+                            name: entry.name, 
+                            file,
+                            duration: 0
+                        });
+                        
+                        const trackItem = document.createElement('div');
+                        trackItem.className = 'track-item';
+                        trackItem.dataset.index = fileCount;
+                        trackItem.innerHTML = `${entry.name}`;
+                        trackItem.onclick = () => playTrack(fileCount);
+                        trackList.appendChild(trackItem);
+                        
+                        fileCount++;
+                    }
+                }
+                
+                // Update track counter
+                trackCounter.textContent = `${tracks.length} TRACKS`;
+                
+                if (tracks.length > 0) {
+                    showNotification(`LOADED ${tracks.length} TRACKS!`, "success");
+                    setTimeout(() => {
+                        playTrack(0);
+                    }, 800);
+                } else {
+                    showNotification("NO AUDIO FILES FOUND", "error");
+                    currentTrackDisplay.innerHTML = '<span class="long-text">NO AUDIO FILES FOUND IN SELECTED FOLDER</span>';
+                }
+            } catch (err) {
+                console.error('Error accessing folder:', err);
+                showNotification("ERROR ACCESSING FOLDER", "error");
+            }
+        }
+        
+        // Update track progress bar and time display
+        audioPlayer.addEventListener('timeupdate', () => {
+            // Update progress bar
+            const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            progressBar.style.width = `${isNaN(progress) ? 0 : progress}%`;
+            
+            // Update time display
+            const currentTime = formatTime(audioPlayer.currentTime);
+            const totalTime = formatTime(audioPlayer.duration);
+            progressTime.textContent = `${currentTime} / ${totalTime}`;
+        });
+        
+        // When track ends
+        audioPlayer.addEventListener('ended', () => {
+            if (isLoopMode) {
+                audioPlayer.currentTime = 0;
+                audioPlayer.play();
+            } else {
+                nextTrack();
+            }
+        });
+        
+        // Add click event to progress bar container for seeking
+        document.querySelector('.progress-container').addEventListener('click', (e) => {
+            if (audioPlayer.duration) {
+                const progressContainer = document.querySelector('.progress-container');
+                const rect = progressContainer.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                audioPlayer.currentTime = pos * audioPlayer.duration;
+            }
+        });
+        
+        // Add startup animation
+        window.addEventListener('load', () => {
+            const container = document.querySelector('.container');
+            container.style.animation = 'power-on 1s ease-out';
+            container.addEventListener('animationend', () => {
+                container.style.animation = '';
+                showNotification("READY TO ROCK!", "success");
+            });
+            
+            // Create scanline effect
+            const scanline = document.createElement('div');
+            scanline.className = 'scanline';
+            document.body.appendChild(scanline);
+            
+            // Add keyboard controls info
+            const keysInfo = document.createElement('div');
+            keysInfo.innerHTML = `
+                <div style="position:fixed; bottom:10px; right:10px; background:rgba(0,0,0,0.7); 
+                            padding:8px; border-radius:5px; font-size:8px; color:#fff;">
+                    SPACE: Play/Pause | ←→: Prev/Next | M: Mute | S: Shuffle | L: Loop
+                </div>
+            `;
+            document.body.appendChild(keysInfo);
+            setTimeout(() => keysInfo.style.opacity = '0.5', 5000);
+        });
+    </script>
